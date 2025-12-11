@@ -1,6 +1,7 @@
 from flask import Flask
+
 from .config import get_config
-from .extensions import db
+from .extensions import db,init_redis
 from .routes import api_bp
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -11,6 +12,8 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Init extensions
     db.init_app(app)
+    init_redis(app)
+    
 
     # Blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
