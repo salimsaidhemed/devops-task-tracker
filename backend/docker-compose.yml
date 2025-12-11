@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: tasktracker-db
+    environment:
+      POSTGRES_DB: tasksdb
+      POSTGRES_USER: taskuser
+      POSTGRES_PASSWORD: taskpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskuser -d tasksdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: tasktracker-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tasktracker-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: dev
+      DATABASE_URL: postgresql://taskuser:taskpassword@db:5432/tasksdb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret
+      AUTO_CREATE_DB: "1"
+    ports:
+      - "8000:8000"
+    # Optional: for easier debugging
+    # volumes:
+    #   - ./src:/app/src:ro
+
+volumes:
+  db_data:
