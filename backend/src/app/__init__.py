@@ -1,6 +1,8 @@
 from flask import Flask
+import os
+
 from .config import get_config
-from .extensions import db
+from .extensions import db,init_redis
 from .routes import api_bp
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -11,6 +13,12 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Init extensions
     db.init_app(app)
+    init_redis(app)
+    
+       # Auto-create tables in dev/compose if requested
+    if os.getenv("AUTO_CREATE_DB") == "1":
+        with app.app_context():
+            db.create_all()
 
     # Blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
